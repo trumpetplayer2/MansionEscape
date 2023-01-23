@@ -10,4 +10,24 @@ public class MoveTrail : MonoBehaviour
         transform.Translate(Vector3.right * Time.deltaTime * moveSpeed);
         Destroy(gameObject, 1f);
     }
+
+    public void OnBecameInvisible()
+    {
+        Destroy(this.gameObject);
+    }
+
+    public void OnTriggerEnter2D(Collider2D collision)
+    {
+        //Ignore the door
+        if (collision.tag.Equals("Door") || collision.tag.Equals("Shootable") || collision.tag.Equals("Ghost")) { return; }
+        //Spawn hit particle
+
+        //Kill Enemy
+        if (collision.gameObject.tag.Equals("Enemy"))
+        {
+            Destroy(collision.gameObject);
+        }
+        //Despawn
+        Destroy(this.gameObject);
+    }
 }

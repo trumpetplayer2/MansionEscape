@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
     public AudioSource Music;
     public AudioClip VictoryJingle;
     public PlayerController player;
+    private bool isFinished = false;
 
     private void Start()
     {
@@ -83,7 +84,7 @@ public class GameManager : MonoBehaviour
     void Update()
     {
 
-        if (Input.GetButtonDown("Cancel"))
+        if (Input.GetButtonDown("Cancel") && !isFinished)
         {
             togglePause();
         }
@@ -108,13 +109,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void finishLevel()
+    public void finishLevel()
     {
-        Music.Stop();
+        //Music.Stop();
         //Show win menu
         WinMenu.SetActive(true);
+        isFinished = true;
+        isPaused = false;
         togglePause();
-        Music.PlayOneShot(VictoryJingle);
+        //Music.PlayOneShot(VictoryJingle);
         if (pauseObjects.Length > 0)
         {
             foreach (GameObject obj in pauseObjects)
@@ -173,5 +176,14 @@ public class GameManager : MonoBehaviour
                 obj.SetActive(!isPaused);
             }
         }
+    }
+
+    public int timerDecrment(int timer)
+    {
+        if (Time.time > nextUpdate)
+        {
+            return timer -= 1;
+        }
+        else return timer;
     }
 }

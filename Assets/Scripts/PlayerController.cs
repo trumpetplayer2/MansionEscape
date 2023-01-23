@@ -9,6 +9,7 @@ using static UnityEngine.PlayerLoop.PreLateUpdate;
 
 public class PlayerController : MonoBehaviour
 {
+    public float baseSpeed;
     public float movementSpeed;
     public Rigidbody2D Player;
     public float jumpPower = 8f;
@@ -19,7 +20,7 @@ public class PlayerController : MonoBehaviour
     private float inX = 0f;
     GameManager gameManager;
     public AudioClip jumpSound;
-    public int range = 1000;
+    public int range = 10;
     bool reloading = false;
     public SpriteRenderer colorFlash;
     public Color defaultColor;
@@ -30,26 +31,49 @@ public class PlayerController : MonoBehaviour
     public float iframes = 3;
     public int health = 3;
 
+    private float nextUpdate = 0f;
+
     public SpriteRenderer gun;
     public Transform pistolPivot;
     public Transform pistolBarrel;
     public LineRenderer bulletLine;
 
+    public int tripTimer = 3;
+    public int tripTime = 0;
+    public int tripSpeed = 2;
+    public bool isTripped = false;
+
+    private Animator animator;
+
     private void Start()
     {
         //gameManager = GameManager.instance;
         bulletLine.startColor = transparentColor;
+        nextUpdate = Time.time + 1f;
+        animator = GetComponent<Animator>();
     }
 
     private void Update()
     {
         inX = Input.GetAxisRaw("Horizontal");
-
+        animator.SetFloat("Speed", Mathf.Abs(inX));
         if (Input.GetButtonDown("Fire1"))
         {
             if (!reloading)
             {
                 shootGun();
+            }
+        }
+        if (isTripped)
+        {
+            if (Time.time > nextUpdate)
+            {
+                tripTime -= 1;
+                nextUpdate = Time.time + 1f;
+            }
+            if(tripTime == 0)
+            {
+                untrip();
             }
         }
     }
@@ -88,7 +112,7 @@ public class PlayerController : MonoBehaviour
                 }
             }
         }
-
+        animator.SetBool("OnGround", isOnGround);
         Vector3 mousePos = Input.mousePosition;
         Vector3 gunPos = Camera.main.WorldToScreenPoint(transform.position);
         mousePos.x = mousePos.x - gunPos.x;
@@ -98,11 +122,13 @@ public class PlayerController : MonoBehaviour
         if (angle > 90 || angle <= -90)
         {
             gun.flipY = true;
+            colorFlash.flipX = true;
             pistolBarrel.localPosition = new Vector3(0.06f, -0.02f, 0f);
         }
         else
         {
             gun.flipY = false;
+            colorFlash.flipX = false;
             pistolBarrel.localPosition = new Vector3(0.06f, 0.02f, 0f);
         }
 
@@ -111,11 +137,15 @@ public class PlayerController : MonoBehaviour
         Debug.DrawLine(pistolBarrel.position, mousePos, Color.green);
     }
 
-    public void damagePlayer()
+    public void damagePlayer(int amount)
     {
         if (iframes <= 0)
         {
-            health -= 1;
+            health -= amount;
+            if(health < 0)
+            {
+                health = 0;
+            }
             iframes = 2;
             if (health > 0)
             {
@@ -132,19 +162,19 @@ public class PlayerController : MonoBehaviour
 
     private void shootGun()
     {
-        Vector3 mousePos = Input.mousePosition;
-        Vector3 gunPos = Camera.main.WorldToScreenPoint(transform.position);
-        mousePos.x = mousePos.x - gunPos.x;
-        mousePos.y = mousePos.y - gunPos.y;
-        //Shoot
-        RaycastHit2D hit = Physics2D.Raycast(pistolBarrel.position, mousePos, range);
+        //Vector3 mousePos = Input.mousePosition;
+        //Vector3 gunPos = Camera.main.WorldToScreenPoint(transform.position);
+        //mousePos.x = mousePos.x - gunPos.x;
+        //mousePos.y = mousePos.y - gunPos.y;
+        ////Shoot
+        //RaycastHit2D hit = Physics2D.Raycast(pistolBarrel.position, mousePos, range);
         effect();
-        if (hit)
-        {
-            if (hit.collider.gameObject.tag.Equals("Enemy")){
-                Destroy(hit.collider.gameObject);
-            }
-        }
+        //if (hit)
+        //{
+        //    if (hit.collider.gameObject.tag.Equals("Enemy")){
+        //        Destroy(hit.collider.gameObject);
+        //    }
+        //}
     }
 
     private void effect()
@@ -165,5 +195,34 @@ public class PlayerController : MonoBehaviour
         //Play death animation if time
 
         GameManager.instance.Death();
+    }
+
+    public void trip()
+    {
+        //Play Trip Animation
+
+        //Decrease stats
+        nextUpdate = Time.time + 1f;
+        movementSpeed = baseSpeed / tripSpeed;
+        tripTime = tripTimer;
+        isTripped = true;
+    }
+
+    public void untrip()
+    {
+        movementSpeed = baseSpeed;
+        isTripped = false;
+    }
+
+    void OnTriggerStay2D(Collider2D collision)
+    {
+        if (Input.GetButton("Fire1") || Input.GetButton("Vertical"))
+        {
+            if(collision.gameObject.tag == "Door")
+            {
+                //Finish Level
+                GameManager.instance.finishLevel();
+            }
+        }
     }
 }

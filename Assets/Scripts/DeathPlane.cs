@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class DeathPlane : MonoBehaviour
 {
+    public int damage = 1;
     private void OnTriggerStay2D(Collider2D collision)
     {
         //If object is not a player
         if (!collision.gameObject.tag.Contains("Player")) { return; }
         //Damage the player
-        GameManager.instance.player.damagePlayer();
+        GameManager.instance.player.damagePlayer(damage);
     }
 }

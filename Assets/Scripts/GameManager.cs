@@ -4,34 +4,27 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public Camera[] cameras;
     public int levelID;
-    private static int attemptNumber = 1;
-    private int TimesSwitched = 0;
-    public TextMeshProUGUI TimeUntilNextSwitch;
-    public TextMeshProUGUI BaseScore;
-    public TextMeshProUGUI SwapsScore;
-    public TextMeshProUGUI TotalScore;
     public double baseScore = 100;
-    public int baseTime = 30;
-    public static int timeBetweenSwitches = 30;
-    private int timeSinceLastSwitch = 0;
-    private int timer = 0;
-    private int totalTime = 0;
     private int sideID = 0;
     private float nextUpdate = 0f;
+    public GameObject mainCamera;
     public static GameManager instance;
     public GameObject[] pauseObjects;
     public GameObject[] resumeObjects;
-    public GameObject[] goals;
-    public Rigidbody2D[] playerHitboxes;
+    public Image[] health;
+    public Sprite heart;
+    public Sprite lostHealth;
     public GameObject WinMenu;
+    public GameObject DeathMenu;
     private bool isPaused = false;
     public AudioSource Music;
     public AudioClip VictoryJingle;
+    public PlayerController player;
 
     private void Start()
     {
@@ -41,7 +34,7 @@ public class GameManager : MonoBehaviour
         {
             //Define instance for easy access later
             instance = this;
-        }else
+        } else
         {
             if (instance.isPaused)
             {
@@ -80,19 +73,10 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        //AttemptsText.text = "Attempts: " + attemptNumber;
-        timer = baseTime;
         nextUpdate = Time.time + 1f;
-        for (int i = 0; i < cameras.Length; i++)
-        {
-            if (i != 0)
-            {
-                cameras[i].gameObject.SetActive(false);
-                playerHitboxes[i].constraints = RigidbodyConstraints2D.FreezePositionX | RigidbodyConstraints2D.FreezePositionY;
-            }
-        }
 
         WinMenu.SetActive(false);
+        DeathMenu.SetActive(false);
     }
 
     // Update is called once per frame
@@ -110,66 +94,18 @@ public class GameManager : MonoBehaviour
          *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*/
         if (Time.time > nextUpdate)
         {
-            timer += 1;
             nextUpdate += 1;
-            totalTime += 1;
-            timeSinceLastSwitch += 1;
-        }
-        if (Input.GetButtonDown("Fire1") && timeSinceLastSwitch > 1)
-        {
-            timeSinceLastSwitch += timeBetweenSwitches - timeSinceLastSwitch;
+            player.updateIFrames();
         }
 
-        if (timeSinceLastSwitch >= timeBetweenSwitches)
+        for(int i = 0; i < 3; i++)
         {
-            //Switch sides
-            //Reset if at max side number
-            if (sideID == (cameras.Length - 1))
-            {
-                sideID = 0;
-                cameras[cameras.Length - 1].gameObject.SetActive(false);
-                playerHitboxes[cameras.Length - 1].constraints = RigidbodyConstraints2D.FreezePosition | RigidbodyConstraints2D.FreezeRotation;
-                cameras[0].gameObject.SetActive(true);
-                playerHitboxes[0].constraints = RigidbodyConstraints2D.FreezeRotation;
-                playerHitboxes[0].AddForce(new Vector2(0, 0.1f));
-            }
-            else
-            {
-                cameras[sideID].gameObject.SetActive(false);
-                playerHitboxes[sideID].constraints = RigidbodyConstraints2D.FreezePosition | RigidbodyConstraints2D.FreezeRotation;
-                sideID++;
-                cameras[sideID].gameObject.SetActive(true);
-                playerHitboxes[sideID].constraints = RigidbodyConstraints2D.FreezeRotation;
-                playerHitboxes[sideID].AddForce(new Vector2(0, 0.1f));
-            }
-            timeSinceLastSwitch = 0;
-            TimesSwitched += 1;
-            //Restart music
-            Music.Stop();
-            Music.Play();
+            health[i].sprite = lostHealth;
         }
-        //Timer.text = "Time: " + timer;
-        TimeUntilNextSwitch.text = "Switch: " + (timeBetweenSwitches - timeSinceLastSwitch);
-        //Check if all players are on the goals
-        if (allOnGoal())
+        for(int i = 0; i < player.health; i++)
         {
-            //You win
-            finishLevel();
+            health[i].sprite = heart;
         }
-    }
-
-    bool allOnGoal()
-    {
-        bool onGoal = true;
-        foreach (GameObject goal in goals)
-        {
-            if(goal.GetComponent<GoalScript>() == null) { continue; }
-            if (!goal.GetComponent<GoalScript>().getOnGoal())
-            {
-                onGoal = false;
-            }
-        }
-        return onGoal;
     }
 
     void finishLevel()
@@ -186,10 +122,6 @@ public class GameManager : MonoBehaviour
                 obj.SetActive(false);
             }
         }
-        //Populate info
-        BaseScore.text = "Base Score: " + baseScore;
-        SwapsScore.text = "Swaps: " + TimesSwitched;
-        TotalScore.text = "Score: " + Mathf.RoundToInt((float) (baseScore * 30/ (TimesSwitched*30+timeSinceLastSwitch)));
     }
 
     public int getSideID()
@@ -198,9 +130,13 @@ public class GameManager : MonoBehaviour
     }
     public void Reset()
     {
-        attemptNumber += 1;
         Time.timeScale = 1;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    public void Death()
+    {
+        DeathMenu.SetActive(true);
     }
 
     public void switchScenes(string scene)
@@ -214,12 +150,12 @@ public class GameManager : MonoBehaviour
         if (!isPaused)
         {
             Time.timeScale = 0f;
-            Music.Pause();
+            //Music.Pause();
         }
         else
         {
             Time.timeScale = 1f;
-            Music.UnPause();
+            //Music.UnPause();
         }
         isPaused = !isPaused;
         //Update all pause/unpause objects

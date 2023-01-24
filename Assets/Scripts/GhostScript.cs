@@ -5,7 +5,7 @@ using UnityEngine;
 public class GhostScript : MonoBehaviour
 {
     public float speed = 2;
-    private float currentSpeed;
+    public float currentSpeed;
 
     private void Start()
     {

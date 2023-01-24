@@ -19,7 +19,7 @@ public class MoveTrail : MonoBehaviour
     public void OnTriggerEnter2D(Collider2D collision)
     {
         //Ignore the door
-        if (collision.tag.Equals("Door") || collision.tag.Equals("Shootable") || collision.tag.Equals("Ghost")) { return; }
+        if (collision.tag.Equals("Door") || collision.tag.Equals("Shootable") || collision.tag.Equals("Ghost") || collision.tag.Equals("Light")) { return; }
         //Spawn hit particle
 
         //Kill Enemy

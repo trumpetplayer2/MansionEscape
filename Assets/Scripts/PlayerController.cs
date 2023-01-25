@@ -18,8 +18,14 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
     public bool isOnGround;
     private float inX = 0f;
-    GameManager gameManager;
     public AudioClip jumpSound;
+    public AudioClip shootSound;
+    public AudioClip damageSound;
+    public AudioClip tripSound;
+    public AudioSource jumpSource;
+    public AudioSource shootSource;
+    public AudioSource damageAudioSource;
+    public AudioSource tripSource;
     public int range = 10;
     bool reloading = false;
     public SpriteRenderer colorFlash;
@@ -30,6 +36,8 @@ public class PlayerController : MonoBehaviour
     private int timeSinceLastFlash = 0;
     public float iframes = 3;
     public int health = 3;
+
+    public ParticleSystem muzzleFlash;
 
     private float nextUpdate = 0f;
 
@@ -80,8 +88,8 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if(Time.timeScale <= 0) { return; }
-        if(iframes > 0)
+        if (Time.timeScale <= 0) { return; }
+        if (iframes > 0)
         {
             timeSinceLastFlash -= 1;
             if (colorFlash.color.a > 0.5f && timeSinceLastFlash < 1)
@@ -89,7 +97,7 @@ public class PlayerController : MonoBehaviour
                 colorFlash.color = flashColor;
                 timeSinceLastFlash = timeBetweenFlash;
             }
-            else if(timeSinceLastFlash < 1)
+            else if (timeSinceLastFlash < 1)
             {
                 colorFlash.color = defaultColor;
                 timeSinceLastFlash = timeBetweenFlash;
@@ -105,11 +113,9 @@ public class PlayerController : MonoBehaviour
         {
             Player.velocity = new Vector2(Player.velocity.x, jumpPower);
             //Get Player audio source and play sound
-            if(this.gameObject.GetComponent<AudioSource>() != null)
+            if (!jumpSource.isPlaying)
             {
-                if (!this.gameObject.GetComponent<AudioSource>().isPlaying) { 
-                this.gameObject.GetComponent<AudioSource>().PlayOneShot(jumpSound);
-                }
+                jumpSource.PlayOneShot(jumpSound);
             }
         }
         animator.SetBool("OnGround", isOnGround);
@@ -137,12 +143,16 @@ public class PlayerController : MonoBehaviour
         Debug.DrawLine(pistolBarrel.position, mousePos, Color.green);
     }
 
-    public void damagePlayer(int amount)
+    public void damagePlayer(int amount, bool ignoreIFrames)
     {
-        if (iframes <= 0)
+        if (iframes <= 0 || ignoreIFrames)
         {
+            if (!damageAudioSource.isPlaying)
+            {
+                damageAudioSource.PlayOneShot(damageSound);
+            }
             health -= amount;
-            if(health < 0)
+            if (health < 0)
             {
                 health = 0;
             }
@@ -152,7 +162,7 @@ public class PlayerController : MonoBehaviour
                 GameManager.instance.mainCamera.GetComponent<CameraFollow>().shakeDuration = 0.05f;
             }
         }
-        if(health == 0)
+        if (health == 0)
         {
             //Player is dead
             Time.timeScale = 0;
@@ -179,7 +189,14 @@ public class PlayerController : MonoBehaviour
 
     private void effect()
     {
+        if(Time.timeScale == 0) { return; }
+        if (shootSource.isPlaying) { return; }
+        muzzleFlash.time = 0;
+        muzzleFlash.Play();
+        shootSource.PlayOneShot(shootSound);
         Instantiate(bulletLine, pistolBarrel.position, pistolPivot.rotation);
+
+        
     }
 
     public void updateIFrames()
@@ -201,6 +218,12 @@ public class PlayerController : MonoBehaviour
     {
         //Play Trip Animation
 
+        //Trip Sound
+
+        if (!tripSource.isPlaying)
+        {
+            tripSource.PlayOneShot(tripSound);
+        }
         //Decrease stats
         nextUpdate = Time.time + 1f;
         movementSpeed = baseSpeed / tripSpeed;

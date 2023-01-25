@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MoveTrail : MonoBehaviour
 {
+    public AudioClip killEnemy;
     public int moveSpeed = 170;
     void Update()
     {
